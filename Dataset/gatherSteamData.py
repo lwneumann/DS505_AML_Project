@@ -1,25 +1,17 @@
 import requests
 import csv
 import os
+import json
 
-# ----------------------
-# CONFIGURATION
-# ----------------------
-
-# This should be pulled more intellegently from the gameIDs.json depending on progress and pass queries to work
-# through the listed games. For now I'm just leaving this here but we'll need fix this when we start gathering.
-APPIDS = {
-    2495100: 'Hello Kitty Island Adventure'
-}
-
-# Steam Web API Key
-STEAM_API_KEY = "wewilladdsteamkeyinasecuremannerhere:)"
 
 # ----------------------
 # GET REVIEWS
 # ----------------------
 
 def get_reviews(appid, num_reviews=100):
+    """
+    Gets as many reviews from an gameID as allowed by the API.
+    """
     url = f'https://store.steampowered.com/appreviews/{appid}'
     params = {
         'json': 1,
@@ -44,11 +36,38 @@ def get_reviews(appid, num_reviews=100):
         print(f"Error fetching reviews for {appid}: {e}")
         return []
 
+
 # ----------------------
 # WRITE REVIEWS TO CSV
 # ----------------------
 
+def isEnglish(s):
+    """
+    Since most english messages can be written in ascii this sort of detects english.
+    It doesn't do anything to stop the other languages that also use ascii though.
+    Also drops reviews with emojis that are otherwise in english.
+    """
+    try:
+        s.encode(encoding='utf-8').decode('ascii')
+    except UnicodeDecodeError:
+        return False
+    else:
+        return True
+
+def process_review(review_message):
+    valid_message = True
+    # Many messages aren't in english. This would be hard for a model to deal with so we shouldn't deal with them.
+    if not isEnglish(review_message):
+        print(review_message)
+        return "", False
+    # Remove new lines
+    review_message.get('review').replace('\n', ' ')
+    return review_message, valid_message
+
 def write_reviews_to_csv(appid, reviews, print_log=True):
+    """
+    Logs the reviews to the csv
+    """
     filename = f"steamreviews.csv"
     # Check if the file already exists
     file_exists = os.path.isfile(filename)
@@ -58,18 +77,51 @@ def write_reviews_to_csv(appid, reviews, print_log=True):
         if not file_exists:
             writer.writerow(['AppID', 'ReviewID', 'Author', 'Review', 'Recommended', 'VotesUp', 'VotesFunny', 'PostedDate'])
         for review in reviews:
-            writer.writerow([
-                appid,
-                review.get('recommendationid'),
-                review.get('author', {}).get('steamid'),
-                review.get('review'),
-                review.get('voted_up'),
-                review.get('votes_up'),
-                review.get('votes_funny'),
-                review.get('timestamp_created')
-            ])
+            # Process/validate review
+            review_message, valid_message = process_review(review.get('review'))
+            if valid_message:
+                writer.writerow([
+                    appid,
+                    review.get('recommendationid'),
+                    review.get('author', {}).get('steamid'),
+                    review_message,
+                    review.get('voted_up'),
+                    review.get('votes_up'),
+                    review.get('votes_funny'),
+                    review.get('timestamp_created')
+                ])
     if print_log:
         print(f"-{appid}: {len(reviews)} reviews")
+    return
+
+
+# ----------------------
+# GET APPIDS
+# ----------------------
+
+def get_game_ids(filename='gameIDs.json'):
+    """
+    This gets a list, of dictionaries
+
+    [
+        {'appid': ID, 'name': 'NAME'}, ...
+    ]
+    """
+    with open(filename, 'r', encoding='utf-8') as file:
+        data = json.load(file)
+    return data['applist']['apps']
+
+
+def get_index():
+    # Gets the next index to use from the file
+    with open('next_ID.txt', 'r', encoding='utf-8') as file:
+        index = int(file.read().strip())
+    return index
+
+def write_index(index):
+    # Writes the next index to use to the file
+    with open('next_ID.txt', 'w', encoding='utf-8') as file:
+        file.write(str(index))
     return
 
 # ----------------------
@@ -85,16 +137,41 @@ def valid_name(name):
     name = name.strip()
     return name != "" or (name[:4] == 'test' and len(name) == 5)
 
-def track_reviews(appid_map, print_log=True):
-    for appid, name in appid_map.items():
-        if valid_name(name):
-            reviews = get_reviews(appid)
-            write_reviews_to_csv(appid, reviews, print_log=print_log)
+def track_reviews(game_info, print_log=True):
+    """
+    From the dictionaries returned by get_game_ids, this logs the reviews.
+    """
+    appid = game_info['appid']
+    name = game_info['name']
+    if valid_name(name):
+        reviews = get_reviews(appid)
+        write_reviews_to_csv(appid, reviews, print_log=print_log)
+    elif print_log:
+        print(f'-{appid}: "{name}" invalid name')
     return
+
+def log_game(gameIDs=None):
+    """
+    This is the main funtion that gets the next unlogged gameID and logs it.
+    It also lets you pass all the gameIDs along between calls if you are doing in batches.
+    """
+    if gameIDs is None:
+        gameIDs = get_game_ids()
+    
+    index = get_index()
+    
+    if index < len(gameIDs):
+        appid = gameIDs[index]
+        track_reviews(appid)
+
+    write_index(index + 1)
+    return gameIDs
 
 # ----------------------
 # MAIN
 # ----------------------
 
 if __name__ == '__main__':
-    track_reviews(APPIDS)
+    ids = None
+    for i in range(40):
+        ids = log_game(ids)
