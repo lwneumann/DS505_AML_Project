@@ -56,7 +56,8 @@ def process_review(review_message, print_log=True):
     # Many messages aren't in english. This would be hard for a model
     if not isEnglish(review_message):
         if print_log:
-            print(f'- Not English;', review_message.strip())
+            print(f'- Not English:\n')
+            print(review_message.strip())
         return None
     # Remove new lines
     review_message = review_message.replace('\n', ' ').replace('\r', ' ')
@@ -108,7 +109,7 @@ def write_reviews_to_csv(appid, gamename, reviews, print_log=True):
                     review.get('timestamp_created')
                 ])
     if print_log:
-        print(f"- {appid}: {len(reviews)} reviews")
+        print(f"- {appid}, {gamename}: {len(reviews)} reviews")
     return
 
 
@@ -204,7 +205,7 @@ if __name__ == '__main__':
     for i in range(x):
         start_time = time.time()
 
-        print(f'{i: >{trial_len}}/{x}', end=' ')
+        print(f'{i+1: >{trial_len}}/{x}', end=' ')
         ids = log_game(ids)
 
         elapsed_time = time.time() - start_time
