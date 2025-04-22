@@ -2,6 +2,7 @@ import requests
 import csv
 import os
 import json
+from langdetect import detect
 
 
 # ----------------------
@@ -41,28 +42,22 @@ def get_reviews(appid, num_reviews=100):
 # WRITE REVIEWS TO CSV
 # ----------------------
 
-def isEnglish(s):
-    """
-    Since most english messages can be written in ascii this sort of detects english.
-    It doesn't do anything to stop the other languages that also use ascii though.
-    Also drops reviews with emojis that are otherwise in english.
-    """
+def isEnglish(text):
     try:
-        s.encode(encoding='utf-8').decode('ascii')
-    except UnicodeDecodeError:
+        lang = detect(text)
+        return lang == 'en'
+    except Exception as e:
         return False
-    else:
-        return True
 
-def process_review(review_message):
-    valid_message = True
-    # Many messages aren't in english. This would be hard for a model to deal with so we shouldn't deal with them.
+def process_review(review_message, print_log=True):
+    # Many messages aren't in english. This would be hard for a model
     if not isEnglish(review_message):
-        print(review_message)
-        return "", False
+        if print_log:
+            print(f'- Not English;', review_message.strip())
+        return None
     # Remove new lines
-    review_message.get('review').replace('\n', ' ')
-    return review_message, valid_message
+    review_message = review_message.replace('\n', ' ').replace('\r', ' ')
+    return review_message
 
 def write_reviews_to_csv(appid, reviews, print_log=True):
     """
@@ -78,20 +73,20 @@ def write_reviews_to_csv(appid, reviews, print_log=True):
             writer.writerow(['AppID', 'ReviewID', 'Author', 'Review', 'Recommended', 'VotesUp', 'VotesFunny', 'PostedDate'])
         for review in reviews:
             # Process/validate review
-            review_message, valid_message = process_review(review.get('review'))
-            if valid_message:
+            review_text = process_review(review.get('review'), print_log)
+            if review_text:
                 writer.writerow([
                     appid,
                     review.get('recommendationid'),
                     review.get('author', {}).get('steamid'),
-                    review_message,
+                    review_text,
                     review.get('voted_up'),
                     review.get('votes_up'),
                     review.get('votes_funny'),
                     review.get('timestamp_created')
                 ])
     if print_log:
-        print(f"-{appid}: {len(reviews)} reviews")
+        print(f"- {appid}: {len(reviews)} reviews")
     return
 
 
@@ -147,7 +142,7 @@ def track_reviews(game_info, print_log=True):
         reviews = get_reviews(appid)
         write_reviews_to_csv(appid, reviews, print_log=print_log)
     elif print_log:
-        print(f'-{appid}: "{name}" invalid name')
+        print(f'- {appid}: "{name}" invalid name')
     return
 
 def log_game(gameIDs=None):
@@ -173,5 +168,5 @@ def log_game(gameIDs=None):
 
 if __name__ == '__main__':
     ids = None
-    for i in range(40):
+    for i in range(200):
         ids = log_game(ids)
