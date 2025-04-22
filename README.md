@@ -36,3 +36,9 @@ pip install -r requirements.txt
 ```bash
 jupyter notebook
 ```
+
+## Data Scraper Usage
+
+The ```gameIDs.json``` has many games and their IDs. ```gatherSteamData.py``` takes the list of all games and from the index in ```next_ID.txt```. Each time it collects the reviews from the game it updates the next index to ```next_ID.txt```. This each time ```gatherSteamData.py``` it will append only new data to ```steamreviews.csv```.
+
+```python gatherSteamData.py x``` gathers the next *x* game reviews. (make sure you are in ```.\Dataset```)
