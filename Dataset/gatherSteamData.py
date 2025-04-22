@@ -73,9 +73,21 @@ def write_reviews_to_csv(appid, gamename, reviews, print_log=True):
         writer = csv.writer(file)
         # Write the header if the file is new
         if not file_exists:
-            writer.writerow(['AppID', 'GameName', 'ReviewID', 'Author', 'Review', 'Recommended',
-                             'VotesUp', 'VotesFunny', 'PlaytimeTotal', 'PlaytimeReview', 'PlaytimeTwoWeeks',
-                             'NumberofReviews', 'PostedDate'])
+            writer.writerow([
+                'AppID',
+                'GameName',
+                'ReviewID',
+                'Author',
+                'Review',
+                'Recommended',
+                'VotesUp',
+                'VotesFunny',
+                'PlaytimeTotal',
+                'PlaytimeReview',
+                'PlaytimeTwoWeeks',
+                'NumberofReviews',
+                'PostedDate'
+            ])
         for review in reviews:
             # Process/validate review
             review_text = process_review(review.get('review'), print_log)
@@ -162,9 +174,9 @@ def log_game(gameIDs=None):
     """
     if gameIDs is None:
         gameIDs = get_game_ids()
-    
+
     index = get_index()
-    
+
     if index < len(gameIDs):
         appid = gameIDs[index]
         track_reviews(appid)
@@ -191,10 +203,10 @@ if __name__ == '__main__':
     trial_len = len(str(x))
     for i in range(x):
         start_time = time.time()
-        
+
         print(f'{i: >{trial_len}}/{x}', end=' ')
         ids = log_game(ids)
-        
+
         elapsed_time = time.time() - start_time
         sleep_time = max(0, 1.5 - elapsed_time)
         time.sleep(sleep_time)
