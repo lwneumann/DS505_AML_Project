@@ -2,6 +2,8 @@ import requests
 import csv
 import os
 import json
+import time
+import sys
 from langdetect import detect
 
 
@@ -23,7 +25,8 @@ def get_reviews(appid, num_reviews=100):
         'review_type': 'all',
         'purchase_type': 'all',
         # Max review is 100
-        'num_per_page': num_reviews
+        'num_per_page': num_reviews,
+        'playtime_forever': True
     }
     try:
         response = requests.get(url, params=params)
@@ -59,7 +62,7 @@ def process_review(review_message, print_log=True):
     review_message = review_message.replace('\n', ' ').replace('\r', ' ')
     return review_message
 
-def write_reviews_to_csv(appid, reviews, print_log=True):
+def write_reviews_to_csv(appid, gamename, reviews, print_log=True):
     """
     Logs the reviews to the csv
     """
@@ -68,21 +71,28 @@ def write_reviews_to_csv(appid, reviews, print_log=True):
     file_exists = os.path.isfile(filename)
     with open(filename, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        # Write the header only if the file is new
+        # Write the header if the file is new
         if not file_exists:
-            writer.writerow(['AppID', 'ReviewID', 'Author', 'Review', 'Recommended', 'VotesUp', 'VotesFunny', 'PostedDate'])
+            writer.writerow(['AppID', 'GameName', 'ReviewID', 'Author', 'Review', 'Recommended',
+                             'VotesUp', 'VotesFunny', 'PlaytimeTotal', 'PlaytimeReview', 'PlaytimeTwoWeeks',
+                             'NumberofReviews', 'PostedDate'])
         for review in reviews:
             # Process/validate review
             review_text = process_review(review.get('review'), print_log)
             if review_text:
                 writer.writerow([
                     appid,
+                    gamename,
                     review.get('recommendationid'),
                     review.get('author', {}).get('steamid'),
                     review_text,
                     review.get('voted_up'),
                     review.get('votes_up'),
                     review.get('votes_funny'),
+                    review.get('author').get('playtime_forever'),
+                    review.get('author').get('playtime_at_review'),
+                    review.get('author').get('playtime_last_two_weeks'),
+                    review.get('author').get('num_reviews'),
                     review.get('timestamp_created')
                 ])
     if print_log:
@@ -140,7 +150,7 @@ def track_reviews(game_info, print_log=True):
     name = game_info['name']
     if valid_name(name):
         reviews = get_reviews(appid)
-        write_reviews_to_csv(appid, reviews, print_log=print_log)
+        write_reviews_to_csv(appid, name, reviews, print_log=print_log)
     elif print_log:
         print(f'- {appid}: "{name}" invalid name')
     return
@@ -167,6 +177,24 @@ def log_game(gameIDs=None):
 # ----------------------
 
 if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print("Usage: python gatherSteamData.py <number_of_iterations>")
+        sys.exit(1)
+
+    try:
+        x = int(sys.argv[1])
+    except ValueError:
+        print("Error: <number_of_iterations> must be an integer.")
+        sys.exit(1)
+
     ids = None
-    for i in range(200):
+    trial_len = len(str(x))
+    for i in range(x):
+        start_time = time.time()
+        
+        print(f'{i: >{trial_len}}/{x}', end=' ')
         ids = log_game(ids)
+        
+        elapsed_time = time.time() - start_time
+        sleep_time = max(0, 1.5 - elapsed_time)
+        time.sleep(sleep_time)
