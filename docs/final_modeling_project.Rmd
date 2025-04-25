@@ -1,0 +1,54 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+## Overview
+
+Present your findings to the class in a compelling way, speaking for 10 minutes or so (if you have more to share and just can't help it, you are welcome to run over that). You don't need to cover everything in your analysis, focus on the fun / interesting / compelling highlights or challenges. A clean notebook with good visualizations (pre-run, don't need to run it live; please do have it cleaned up for a presentation context) or slides would both be fine, whatever works for your team.
+
+Please note that a given sub-area (PCA, or hyperparameter optimization, etc.) may not be that meaningful for your particular dataset. It is fine to emphasize one area less and another area more.
+
+The point totals below are more guidelines. Explaning your dataset is important, the main focus is on supervised learning, and dimensionality reduction and clustering can (sometimes) give us cool insights. I won't be viewing the presentations and subtracting points for not mentioning a certain line item. The real goal is "show your peers some cool analysis of data, demonstrating that you have learned to apply the key ideas of the course to a novel dataset". 
+
+As always, please feel free to email me with any questions. 
+
+## Modeling project - outline
+
+5 pts: introduce your dataset to the audience. Here are some suggested key points.
+
+* how many features? how many rows?
+* continuous or categorical? missing data?
+* What is your dependent variable? regression or classification? distribution?
+* did you need to perform any data exploration, cleaning, transformation?
+
+
+
+10 pts: perform some thoughtful supervised learning, including engineering and selecting features, selecting and optimizing a model, and explaining your model (coefficients or feature importance, performance). Here are some suggested key points.
+
+* feature engineering / selection, bivariate charts? Interactions?
+* missing data? how to handle it?
+* Selection of modeling algorithm? classification or regression? binary or multi-class?  
+* interpretation of variable importance, coefficients if applicable
+* justification of choice of metric (accuracy, precision / recall, other?)
+* is class weighting or over / under sampling appropriate?
+* discussion of choice or tuning of hyperparameters, if any
+* meaningful discussion of predictive power and conclusions from model
+* look at misclassified examples from test dataset, what do they say about your model?
+* outliers in data?
+
+
+5 pts: PCA as data exploration and visualization. Here are some suggested key points.
+
+* take a look at PCA, percent explained
+* take a look at top eigenvector or two, what is it made out of?
+* can you visualize your prediction problem by projecting to 2 dimensions?
+
+
+
+5 pts: k-means as data exploration and visualization. Here are some suggested key points.
+
+* discussion for choosing number of clusters
+* analysis of cluster centers
+* scatter plot(s) showing 2 dimensional perspective of clusters and cluster centers?
+* meaningful interpretation / discussion of conclusions 
